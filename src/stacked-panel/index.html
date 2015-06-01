@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stacked Panel Test</title>
+    <link rel="stylesheet" type="text/css" href="stacked-panel.css">
+    <script src="stacked-panel.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="details-aside"></div>
+        <div class="details-stacked-panel">
+            <div class="details-placeholder"
+                 style="height: 300px; background: yellow;"></div>
+            <div class="details-placeholder"
+                 style="height: 240px; background: red;"></div>
+            <div class="details-placeholder"
+                 style="height: 240px; background: orange;"></div>
+            <div class="details-placeholder"
+                 style="height: 240px; background: brown;"></div>
+            <div class="details-placeholder"
+                 style="height: 240px; background: purple;"></div>
+            <div class="details-placeholder"
+                 style="height: 240px; background: pink;"></div>
+        </div>
+    </div>
+    <script>
+        var stackedPanel = new StackedPanel(document.querySelector('.details-stacked-panel'), {
+            scrollOffsets: [240, 240, 240, 240],
+            viewport: 720
+        });
+    </script>
+</body>
+</html>
