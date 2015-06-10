@@ -54,6 +54,13 @@ Scroller.prototype._scroll = function (direction) {
         transformRatio = (direction === Scroller.FORWARD ? - 1 : 1),
         startTime = performance.now(),
         tweens = _.map(this.items, function (child, i, items) {
+            function finishTween() {
+                if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
+
+                transforms[i] = [_.indexOf(wheel, i) * options.scrollStep, 0, 0];
+                child.style.webkitTransform = getTransformStyle(transforms[i]);
+            }
+
             return new TWEEN.Tween(transforms[i])
                 .to([
                     transforms[i][0] + transformRatio * this.options.scrollStep, 0, 0
@@ -62,18 +69,8 @@ Scroller.prototype._scroll = function (direction) {
                 .onUpdate(function () {
                     child.style.webkitTransform = getTransformStyle(this);
                 })
-                .onStop(function () {
-                    if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
-
-                    transforms[i] = [_.indexOf(wheel, i) * options.scrollStep, 0, 0];
-                    child.style.webkitTransform = getTransformStyle(transforms[i]);
-                })
-                .onComplete(function () {
-                    if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
-
-                    transforms[i] = [_.indexOf(wheel, i) * options.scrollStep, 0, 0];
-                    child.style.webkitTransform = getTransformStyle(transforms[i]);
-                })
+                .onStop(finishTween)
+                .onComplete(finishTween)
                 .start(startTime);
         }, this),
         rafId;
