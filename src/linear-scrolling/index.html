@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Linear Scrolling</title>
+
+  <link rel="stylesheet" type="text/css" href="css/styles.css">
+  <script src="build/bundle.js"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- <img src="http://placehold.it/180x260?text=5">
+    <img src="http://placehold.it/180x260?text=6"> -->
+
+    <img src="http://placehold.it/180x260?text=1">
+    <img src="http://placehold.it/180x260?text=2">
+    <img src="http://placehold.it/180x260?text=3">
+    <img src="http://placehold.it/180x260?text=4">
+    <img src="http://placehold.it/180x260?text=5">
+    <img src="http://placehold.it/180x260?text=6">
+
+    <!-- <img src="http://placehold.it/180x260?text=1">
+    <img src="http://placehold.it/180x260?text=2"> -->
+  </div>
+  <script>
+    App.run(document.querySelector('.container'));
+
+    document.addEventListener('keydown', App.handleEvent);
+  </script>
+</body>
+</html>
