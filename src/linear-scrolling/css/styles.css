@@ -1,10 +1,17 @@
+body {
+  overflow: hidden;
+}
+
 .container {
   position: absolute;
   top: 20px;
   left: 20px;
+  overflow-x: hidden;
+  width: 1140px;
+  height: 300px;
 }
 
-img {
+.item {
   position: absolute;
   padding-right: 10px;
 }

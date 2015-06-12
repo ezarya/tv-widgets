@@ -1,6 +1,9 @@
 var _ = require('lodash');
 var TWEEN = require('tween.js');
 
+var Constants = require('./constants.js');
+var TrandformWheel = require('./transform-wheel.js');
+
 function getTransformStyle(coords) {
     return 'translate3d(' + [
         coords[0],
@@ -9,19 +12,43 @@ function getTransformStyle(coords) {
     ].join('px,') + ')';
 }
 
+function add(a, b) { return a + b; }
+
+function sub(a, b) { return a - b; }
+
+function buildTransformMap(delta, count, fauxCount) {
+    var map = new Array(count + 2 * fauxCount),
+        i, len;
+
+    for (i = 0, len = fauxCount; i < len; i++) {
+        map[i] = _.zipWith([0, 0, 0], delta, sub);
+    }
+
+    for (i, len = i + count; i < len; i++) {
+        map[i] = _.zipWith(map[i - 1], delta, add);
+    }
+
+    for (i, len = i + fauxCount; i < len; i++) {
+        map[i] = _.zipWith(map[count + fauxCount - 1], delta, add);
+    }
+
+    return map;
+}
+
 function Scroller(element, options) {
     this.element = element;
     this.options = _.defaults({}, options, Scroller.defaults);
-    this.wheel = _.range(0, this.options.viewport);
-    this.transforms = new Array(this.options.viewport);
     this.items = _.toArray(this.element.children);
+
+    this.transforms = new TrandformWheel(
+        buildTransformMap([this.options.scrollStep, 0, 0], this.options.viewport, 1)
+    );
 
     this.init();
 }
 
 Scroller.prototype.init = function () {
     _.forEach(this.items, function (child, i) {
-        this.transforms[i] = [this.wheel[i] * this.options.scrollStep, 0, 0];
         child.style.webkitTransform = getTransformStyle(this.transforms[i]);
     }, this);
 };
@@ -32,75 +59,48 @@ Scroller.defaults = {
     scrollDuration: 200
 };
 
-Scroller.FORWARD = 0;
-Scroller.BACKWARD = 1;
-
-Scroller.prototype.forward = function () {
+Scroller.prototype.forward = function (long) {
     _.forEachRight(TWEEN.getAll(), function (tween) { tween.stop(); });
-    this._rotateWheel(Scroller.FORWARD);
-    this._scroll(Scroller.FORWARD);
+    this._scroll(Constants.FORWARD);
 };
 
 Scroller.prototype.backward = function () {
     _.forEachRight(TWEEN.getAll(), function (tween) { tween.stop(); });
-    this._rotateWheel(Scroller.BACKWARD);
-    this._scroll(Scroller.BACKWARD);
+    this._scroll(Constants.BACKWARD);
 };
 
 Scroller.prototype._scroll = function (direction) {
-    var wheel = this.wheel,
-        options = this.options,
-        transforms = this.transforms,
-        transformRatio = (direction === Scroller.FORWARD ? - 1 : 1),
-        startTime = performance.now(),
-        tweens = _.map(this.items, function (child, i, items) {
-            function finishTween() {
-                if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
+    var options = this.options,
+        startTransforms = _.toArray(this.transforms),
+        endTransforms = this.transforms.rotate(direction),
+        startTime = performance.now();
 
-                transforms[i] = [_.indexOf(wheel, i) * options.scrollStep, 0, 0];
-                child.style.webkitTransform = getTransformStyle(transforms[i]);
-            }
+    _.forEach(this.items, function (child, i, items) {
 
-            return new TWEEN.Tween(transforms[i])
-                .to([
-                    transforms[i][0] + transformRatio * this.options.scrollStep, 0, 0
-                ], this.options.scrollDuration)
-                .easing(TWEEN.Easing.Quadratic.InOut)
-                .onUpdate(function () {
-                    child.style.webkitTransform = getTransformStyle(this);
-                })
-                .onStop(finishTween)
-                .onComplete(finishTween)
-                .start(startTime);
-        }, this),
-        rafId;
+        var delta = _.map(_.zipWith(endTransforms[i], startTransforms[i], sub), Math.abs);
 
-    rafId = requestAnimationFrame(function updateTweens(time) {
-        rafId = requestAnimationFrame(updateTweens);
-
-        TWEEN.update(time);
+        new TWEEN.Tween(_.slice(startTransforms[i]))
+            .to(
+                endTransforms[i],
+                _.sum(delta) > options.scrollStep ? 0 : options.scrollDuration
+            )
+            .easing(TWEEN.Easing.Cubic.InOut)
+            .onUpdate(function () {
+                child.style.webkitTransform = getTransformStyle(this);
+            })
+            .onStop(function () {
+                child.style.webkitTransform = getTransformStyle(endTransforms[i]);
+            })
+            .start(startTime);
     });
-};
 
-Scroller.prototype._rotateWheel = function (direction) {
-    var temp, tempIdx;
+    requestAnimationFrame(function updateTweens() {
+        TWEEN.update(performance.now());
 
-    if (direction === Scroller.FORWARD) {
-        tempIdx = 0;
-        temp = this.wheel[tempIdx];
-        while (tempIdx < this.wheel.length - 1) {
-            this.wheel[tempIdx] = this.wheel[++tempIdx];
+        if (TWEEN.getAll().length) {
+            requestAnimationFrame(updateTweens);
         }
-        this.wheel[this.wheel.length - 1] = temp;
-    } else if (direction === Scroller.BACKWARD) {
-        tempIdx = this.wheel.length - 1;
-        temp = this.wheel[tempIdx];
-        while (tempIdx > 0) {
-            this.wheel[tempIdx] = this.wheel[--tempIdx];
-        }
-        this.wheel[0] = temp;
-    }
-    return this.wheel;
+    });
 };
 
 module.exports = Scroller;
