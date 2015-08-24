@@ -1,56 +1,35 @@
 var _ = require('lodash');
-var TWEEN = require('tween.js');
 
 var Constants = require('./constants.js');
-var TrandformWheel = require('./transform-wheel.js');
+var IndexWheel = require('./index_wheel');
 
 function getTransformStyle(coords) {
     return 'translate3d(' + [
-        coords[0],
-        coords[1],
-        coords[2]
+        coords[0].toFixed(4),
+        coords[1].toFixed(4),
+        coords[2].toFixed(4)
     ].join('px,') + ')';
-}
-
-function add(a, b) { return a + b; }
-
-function sub(a, b) { return a - b; }
-
-function buildTransformMap(delta, count, fauxCount) {
-    var map = new Array(count + 2 * fauxCount),
-        i, len;
-
-    for (i = 0, len = fauxCount; i < len; i++) {
-        map[i] = _.zipWith([0, 0, 0], delta, sub);
-    }
-
-    for (i, len = i + count; i < len; i++) {
-        map[i] = _.zipWith(map[i - 1], delta, add);
-    }
-
-    for (i, len = i + fauxCount; i < len; i++) {
-        map[i] = _.zipWith(map[count + fauxCount - 1], delta, add);
-    }
-
-    return map;
 }
 
 function Scroller(element, options) {
     this.element = element;
     this.options = _.defaults({}, options, Scroller.defaults);
     this.items = _.toArray(this.element.children);
-
-    this.transforms = new TrandformWheel(
-        buildTransformMap([this.options.scrollStep, 0, 0], this.options.viewport, 1)
-    );
+    this.wheel = new IndexWheel(this.items.length);
 
     this.init();
 }
 
 Scroller.prototype.init = function () {
-    _.forEach(this.items, function (child, i) {
-        child.style.webkitTransform = getTransformStyle(this.transforms[i]);
-    }, this);
+    var wheel = this.wheel,
+        scrollStep = this.options.scrollStep,
+        items = this.items;;
+
+    _.forEach(this.wheel, function (itemIndex, itemPosition) {
+        var xCoord = itemPosition * scrollStep;
+
+        items[itemIndex].style.webkitTransform = getTransformStyle([xCoord, 0, 0]);
+    });
 };
 
 Scroller.defaults = {
@@ -60,47 +39,38 @@ Scroller.defaults = {
 };
 
 Scroller.prototype.forward = function (long) {
-    _.forEachRight(TWEEN.getAll(), function (tween) { tween.stop(); });
+    this.wheel.forward();
     this._scroll(Constants.FORWARD);
 };
 
 Scroller.prototype.backward = function () {
-    _.forEachRight(TWEEN.getAll(), function (tween) { tween.stop(); });
+    this.wheel.backward();
     this._scroll(Constants.BACKWARD);
 };
 
 Scroller.prototype._scroll = function (direction) {
-    var options = this.options,
-        startTransforms = _.toArray(this.transforms),
-        endTransforms = this.transforms.rotate(direction),
-        startTime = performance.now();
+    var scrollStep = this.options.scrollStep,
+        items = this.items;
 
-    _.forEach(this.items, function (child, i, items) {
+    _.forEach(this.wheel, function (itemIndex, itemPosition, wheel) {
+        var xCoord = itemPosition * scrollStep;
 
-        var delta = _.map(_.zipWith(endTransforms[i], startTransforms[i], sub), Math.abs);
-
-        new TWEEN.Tween(_.slice(startTransforms[i]))
-            .to(
-                endTransforms[i],
-                _.sum(delta) > options.scrollStep ? 0 : options.scrollDuration
-            )
-            .easing(TWEEN.Easing.Cubic.InOut)
-            .onUpdate(function () {
-                child.style.webkitTransform = getTransformStyle(this);
-            })
-            .onStop(function () {
-                child.style.webkitTransform = getTransformStyle(endTransforms[i]);
-            })
-            .start(startTime);
-    });
-
-    requestAnimationFrame(function updateTweens() {
-        TWEEN.update(performance.now());
-
-        if (TWEEN.getAll().length) {
-            requestAnimationFrame(updateTweens);
+        if (direction === Constants.FORWARD && itemPosition === wheel.length - 1) {
+            // last position
+            items[itemIndex].style.webkitTransition = '-webkit-transform 0ms';
+        } else if (direction === Constants.BACKWARD && itemPosition === 0) {
+            // first position
+            items[itemIndex].style.webkitTransition = '-webkit-transform 0ms';
+        } else {
+            items[itemIndex].style.webkitTransition = '-webkit-transform 200ms';
         }
+
+        items[itemIndex].style.webkitTransform = getTransformStyle([xCoord, 0, 0]);
     });
+};
+
+Scroller.prototype._scrollLong = function(direction) {
+
 };
 
 module.exports = Scroller;

@@ -11,7 +11,13 @@ body {
   height: 300px;
 }
 
+.container-scroller {
+  -webkit-transform: translateX(-190px);
+}
+
 .item {
   position: absolute;
+  left: 0;
+  top: 0;
   padding-right: 10px;
 }

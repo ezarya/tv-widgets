@@ -5,8 +5,7 @@
   "main": "js/app.js",
   "dependencies": {
     "browserify": "^10.2.4",
-    "lodash": "^3.9.3",
-    "tween.js": "^0.14.0"
+    "lodash": "^3.9.3"
   },
   "devDependencies": {
     "chai": "^3.0.0",
@@ -15,7 +14,7 @@
   },
   "scripts": {
     "start": "watchify -o build/bundle.js -v -d js/app.js",
-    "test": "./node_modules/.bin/mocha --reporter spec"
+    "test": "mocha --reporter spec"
   },
   "author": "Yauheni Zara",
   "license": "TBD"

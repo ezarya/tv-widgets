@@ -3,7 +3,7 @@ var Scroller = require('./scroller.js');
 var scroller = null;
 
 function runApp(container) {
-    scroller = new Scroller(container, {
+    scroller = global.scroller = new Scroller(container, {
         viewport: 6,
         scrollStep: 190
     });
